@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kartografie – Lernen im Auto</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap');
+  :root{
+    --bg:#1a1410;
+    --bg2:#2a1f17;
+    --panel:#2d2218;
+    --panel2:#3a2c1f;
+    --ink:#f5ecd7;
+    --ink2:#d4c4a0;
+    --accent:#e8a76b;
+    --accent2:#7fb8d4;
+    --gold:#f4c666;
+    --green:#8fd47f;
+    --red:#ff7a7a;
+    --border:rgba(232,167,107,0.3);
+    --muted:#a89778;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Fredoka',sans-serif;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(232,167,107,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(127,184,212,0.06) 0%, transparent 50%);
+    color:var(--ink);
+    min-height:100vh;
+    padding:16px 14px 100px;
+    font-size:17px;
+    line-height:1.5;
+  }
+  .wrap{max-width:720px;margin:0 auto}
+
+  header{text-align:center;padding:12px 0 20px}
+  h1{
+    font-family:'Cinzel',serif;
+    font-size:1.9rem;color:var(--gold);
+    letter-spacing:2px;line-height:1.1;
+  }
+  .sub{color:var(--muted);font-size:.95rem;margin-top:6px;font-style:italic}
+
+  /* Mode selector */
+  .modepick{
+    display:none;flex-direction:column;gap:14px;margin-top:20px;
+  }
+  .modepick.active{display:flex}
+  .mode-card{
+    background:var(--panel);border:2px solid var(--border);border-radius:18px;
+    padding:22px 20px;cursor:pointer;transition:all .2s;
+    text-align:left;
+  }
+  .mode-card:active{transform:scale(0.98)}
+  .mode-card h2{
+    font-family:'Cinzel',serif;color:var(--accent);font-size:1.4rem;
+    margin-bottom:8px;letter-spacing:1px;
+  }
+  .mode-card p{color:var(--ink2);font-size:1rem;line-height:1.5}
+  .mode-card .emoji{font-size:2.4rem;display:block;margin-bottom:8px}
+
+  /* Active mode screen */
+  .screen{display:none}
+  .screen.active{display:block}
+
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:12px 16px;margin-bottom:16px;gap:10px;
+    position:sticky;top:8px;z-index:10;backdrop-filter:blur(10px);
+  }
+  .btn-back{
+    background:transparent;color:var(--accent2);border:1.5px solid var(--accent2);
+    border-radius:10px;padding:8px 14px;font-family:inherit;font-size:.85rem;
+    font-weight:600;cursor:pointer;
+  }
+  .btn-back:active{background:var(--accent2);color:var(--bg)}
+  .counter{font-family:'Cinzel',serif;color:var(--gold);font-weight:700;font-size:1rem}
+  .score-live{color:var(--accent);font-weight:700;font-size:1rem;font-family:'Cinzel',serif}
+
+  .card{
+    background:var(--panel);border:2px solid var(--border);
+    border-radius:18px;padding:24px 20px;margin-bottom:16px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.3);
+  }
+
+  .chapter-tag{
+    display:inline-block;background:var(--panel2);color:var(--accent);
+    border:1px solid var(--border);border-radius:20px;
+    padding:5px 14px;font-size:.78rem;font-weight:600;
+    letter-spacing:1px;margin-bottom:14px;
+  }
+  .diff-tag{
+    display:inline-block;border-radius:20px;padding:4px 12px;
+    font-size:.75rem;font-weight:700;letter-spacing:1px;margin-left:8px;
+  }
+  .diff-1{background:rgba(143,212,127,0.15);color:var(--green);border:1px solid var(--green)}
+  .diff-2{background:rgba(244,198,102,0.15);color:var(--gold);border:1px solid var(--gold)}
+  .diff-3{background:rgba(255,122,122,0.15);color:var(--red);border:1px solid var(--red)}
+
+  .info-head{
+    font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);
+    margin-bottom:12px;letter-spacing:1px;
+  }
+  .info-body{color:var(--ink2);font-size:1.05rem;line-height:1.7}
+  .info-body strong{color:var(--accent)}
+
+  .q-head{
+    font-family:'Cinzel',serif;color:var(--accent);font-size:.9rem;
+    letter-spacing:1.5px;margin-bottom:10px;text-transform:uppercase;
+  }
+  .q-text{
+    font-size:1.3rem;font-weight:600;line-height:1.45;color:var(--ink);
+    margin-bottom:16px;
+  }
+  .q-list{list-style:none;counter-reset:q}
+  .q-item{
+    counter-increment:q;
+    padding:14px 0 14px 42px;position:relative;
+    font-size:1.1rem;color:var(--ink);line-height:1.5;
+    border-bottom:1px solid rgba(232,167,107,0.1);
+  }
+  .q-item:last-child{border-bottom:none}
+  .q-item::before{
+    content:counter(q);
+    position:absolute;left:0;top:12px;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--accent);color:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.95rem;
+  }
+
+  .reveal-btn{
+    width:100%;background:linear-gradient(135deg,var(--accent),var(--gold));
+    color:var(--bg);border:none;border-radius:14px;
+    padding:16px;font-family:'Cinzel',serif;font-size:1.05rem;
+    font-weight:700;letter-spacing:2px;cursor:pointer;
+    margin-top:14px;text-transform:uppercase;
+    box-shadow:0 4px 14px rgba(232,167,107,0.3);
+  }
+  .reveal-btn:active{transform:scale(0.98)}
+
+  .answers{display:none;margin-top:16px;padding-top:16px;border-top:2px dashed var(--border)}
+  .answers.show{display:block;animation:fade .3s}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+  .a-head{
+    font-family:'Cinzel',serif;color:var(--green);font-size:.9rem;
+    letter-spacing:1.5px;margin-bottom:12px;text-transform:uppercase;
+  }
+  .a-item{
+    padding:12px 0 12px 42px;position:relative;
+    font-size:1.05rem;color:var(--ink2);line-height:1.5;
+    counter-increment:a;
+    border-bottom:1px solid rgba(143,212,127,0.1);
+  }
+  .a-item:last-child{border-bottom:none}
+  .a-item::before{
+    content:counter(a) '✓';
+    position:absolute;left:0;top:10px;
+    color:var(--green);font-weight:700;font-size:.95rem;
+    font-family:'Cinzel',serif;
+  }
+  .a-list{list-style:none;counter-reset:a}
+  .a-item strong{color:var(--gold)}
+
+  /* Nav buttons */
+  .navrow{display:flex;gap:10px;margin-top:16px}
+  .nav-btn{
+    flex:1;background:var(--panel2);color:var(--ink);
+    border:2px solid var(--border);border-radius:14px;
+    padding:14px;font-family:'Fredoka',sans-serif;font-size:1rem;
+    font-weight:600;cursor:pointer;transition:all .15s;
+  }
+  .nav-btn:active{transform:scale(0.97)}
+  .nav-btn.primary{
+    background:linear-gradient(135deg,var(--accent),var(--gold));
+    color:var(--bg);border-color:transparent;
+  }
+  .nav-btn:disabled{opacity:0.35;cursor:not-allowed}
+
+  /* Quizshow */
+  .qs-points{
+    display:inline-block;background:var(--panel2);color:var(--gold);
+    border:1px solid var(--gold);border-radius:20px;
+    padding:4px 12px;font-size:.78rem;font-weight:700;margin-left:8px;
+  }
+  .answer-btn{
+    width:100%;background:var(--panel2);color:var(--ink);
+    border:2px solid var(--border);border-radius:14px;
+    padding:14px;font-family:'Fredoka',sans-serif;font-size:1rem;
+    font-weight:600;cursor:pointer;margin-top:10px;
+    text-align:left;transition:all .15s;
+  }
+  .answer-btn.show-right{
+    background:rgba(143,212,127,0.2);border-color:var(--green);
+    color:var(--green);
+  }
+  .answer-btn.show-wrong{
+    background:rgba(255,122,122,0.2);border-color:var(--red);
+  }
+  .qs-reveal{
+    width:100%;background:transparent;color:var(--accent2);
+    border:2px dashed var(--accent2);border-radius:14px;
+    padding:16px;font-family:'Cinzel',serif;font-size:.95rem;
+    font-weight:700;letter-spacing:1.5px;cursor:pointer;
+    margin-top:14px;text-transform:uppercase;
+  }
+  .qs-reveal:active{background:var(--accent2);color:var(--bg)}
+  .qs-answer{
+    display:none;margin-top:14px;padding:16px;
+    background:rgba(143,212,127,0.1);border-left:4px solid var(--green);
+    border-radius:0 12px 12px 0;color:var(--ink2);line-height:1.6;
+  }
+  .qs-answer.show{display:block;animation:fade .3s}
+  .qs-answer strong{color:var(--green)}
+
+  .result-card{text-align:center;padding:30px 20px}
+  .result-emoji{font-size:4rem;margin-bottom:10px}
+  .result-score{
+    font-family:'Cinzel',serif;color:var(--gold);
+    font-size:3rem;font-weight:700;margin:14px 0;letter-spacing:3px;
+  }
+  .result-text{font-family:'Cinzel',serif;color:var(--ink);font-size:1.1rem;letter-spacing:1px}
+
+  footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:30px;font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Kartografie</h1>
+    <p class="sub">Lernen im Auto · Alessia 🚗📍</p>
+  </header>
+
+  <!-- MODUS WAHL -->
+  <div id="modepick" class="modepick active">
+    <div class="mode-card" onclick="startMode('rally')">
+      <span class="emoji">🏁</span>
+      <h2>Lern-Rallye</h2>
+      <p>Zuerst eine kurze Info zum Kapitel vorlesen, dann 4–5 Fragen stellen – und die Antworten erst danach einblenden. Perfekt für den ersten Durchgang.</p>
+    </div>
+    <div class="mode-card" onclick="startMode('show')">
+      <span class="emoji">🎯</span>
+      <h2>Quizshow</h2>
+      <p>Nur Fragen – von leicht nach schwer, mit Punkten (1–3 pro Frage). Du liest vor, Alessia rät, am Ende gibt's einen Rang. Zum Festigen.</p>
+    </div>
+    <div class="mode-card" onclick="startMode('mass')">
+      <span class="emoji">🧮</span>
+      <h2>Massstab-Kopfrechnen</h2>
+      <p>Nur Rechenaufgaben zum Massstab – kurz und knackig für zwischendurch. Ideal, wenn's bei den Zahlen noch harzt.</p>
+    </div>
+  </div>
+
+  <!-- RALLY MODE -->
+  <div id="screen-rally" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="goHome()">← Menü</button>
+      <div class="counter" id="rallyCount"></div>
+      <div style="width:60px"></div>
+    </div>
+    <div id="rallyContent"></div>
+  </div>
+
+  <!-- QUIZSHOW MODE -->
+  <div id="screen-show" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="goHome()">← Menü</button>
+      <div class="counter" id="showCount"></div>
+      <div class="score-live" id="showScore">✦ 0</div>
+    </div>
+    <div id="showContent"></div>
+  </div>
+
+  <!-- MASS MODE -->
+  <div id="screen-mass" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="goHome()">← Menü</button>
+      <div class="counter" id="massCount"></div>
+      <div class="score-live" id="massScore">✦ 0</div>
+    </div>
+    <div id="massContent"></div>
+  </div>
+
+  <footer>Erstellt für Alessia · KSM Geografie</footer>
+</div>
+
+<script>
+/* =============== LERN-RALLYE DATEN =============== */
+const RALLY=[
+  {ch:'Kap. 1 – Einführung Kartografie',
+   info:'Die <strong>Kartografie</strong> ist die Lehre vom Herstellen und Lesen von Karten. Die Erde hat einen Durchmesser von rund <strong>12\'800 km</strong>. Ein Globus ist nur 30–40 cm gross und darum stark verkleinert – darum müssen viele Details weggelassen werden. Mehrere Karten zusammengebunden ergeben einen <strong>Atlas</strong>.',
+   qs:[
+     ['Was ist Kartografie?','Die Lehre vom Herstellen und Lesen von Karten.'],
+     ['Wie gross ist der Durchmesser der Erde?','Rund 12\'800 km.'],
+     ['Wie heisst ein Buch mit vielen Karten?','Atlas.'],
+     ['Warum müssen auf dem Globus viele Dinge weggelassen werden?','Weil er stark verkleinert ist (nur 30–40 cm statt 12\'800 km).'],
+   ]},
+
+  {ch:'Kap. 2 – Begriffe & Kartentypen',
+   info:'Eine Karte wird aus der <strong>Vogelperspektive</strong> gezeichnet – senkrecht von oben. Sie ist <strong>verkleinert</strong> (Massstab zeigt wie stark), <strong>verebnet</strong> (Höhe sieht man nicht direkt) und <strong>generalisiert</strong> (vereinfacht, mit Signaturen). Es gibt zwei Haupttypen: Die <strong>topografische Karte</strong> zeigt alles gleich wichtig (Berge, Flüsse, Häuser). Die <strong>thematische Karte</strong> hebt mit Farben und Symbolen ein bestimmtes Thema hervor (z.B. Klima, Bevölkerung).',
+   qs:[
+     ['Aus welcher Perspektive wird eine Karte gezeichnet?','Aus der Vogelperspektive – senkrecht von oben.'],
+     ['Was bedeutet „generalisiert"?','Vereinfacht – ähnliche Dinge werden mit einer Signatur zusammengefasst.'],
+     ['Was bedeutet „verebnet"?','Die Höhe von Bergen und Objekten ist auf der Karte flach – nicht direkt sichtbar.'],
+     ['Welche zwei Haupttypen von Karten gibt es?','Topografische Karten (alles gleich wichtig) und thematische Karten (ein Thema hervorgehoben).'],
+     ['Was zeigt eine thematische Karte? Nenne ein Beispiel.','Sie hebt mit Farben/Symbolen ein Thema hervor, z.B. Klima, Velowege oder Bevölkerung.'],
+   ]},
+
+  {ch:'Kap. 3 – Vom Globus zur Karte',
+   info:'Der <strong>Umfang der Erde</strong> beträgt rund <strong>40\'000 km</strong>. Ein Globus zeigt die Erde wie aus dem Raumschiff – ohne Kartenrand. Aber: Man sieht immer nur eine Hälfte, es fehlen Details, und er ist unhandlich. Ein <strong>Relief</strong> ist ein dreidimensionales Geländemodell, aufwändig und selten. Das zentrale Problem der Kartografie: Man muss die runde Erde (3D) auf eine flache Karte (2D) bringen – dabei entstehen immer <strong>Verzerrungen</strong>.',
+   qs:[
+     ['Wie gross ist der Umfang der Erde?','Rund 40\'000 km.'],
+     ['Nenne einen Vorteil und einen Nachteil des Globus.','Vorteil: Man sieht die Erde wie aus dem Raumschiff. Nachteil: Immer nur eine Hälfte, unhandlich, keine Details.'],
+     ['Was ist ein Relief?','Ein dreidimensionales, verkleinertes Geländemodell (wie eine Bildhauerarbeit).'],
+     ['Was ist das zentrale Problem beim Herstellen einer Karte?','Die Übertragung von 3D (Kugel) auf 2D (Fläche) – dabei entstehen immer Verzerrungen.'],
+   ]},
+
+  {ch:'Kap. 4 – Kartenprojektionen ⭐',
+   info:'Eine <strong>Kartenprojektion</strong> ist das mathematische Verfahren, mit dem die runde Erde auf eine flache Karte kommt. Es gibt drei Hauptarten: <strong>Zylinderprojektion</strong> (für den Äquator, z.B. Mercator), <strong>Kegelprojektion</strong> (für mittlere Breiten mit grosser West-Ost-Ausdehnung) und <strong>Azimutalprojektion</strong> (für kreisförmige Gebiete wie die Pole). Dabei gibt es drei „Treue"-Arten: <strong>längentreu</strong> (Distanzen stimmen), <strong>flächentreu</strong> (Flächen stimmen) und <strong>winkeltreu</strong> (Winkel stimmen – wichtig für die Schifffahrt). Wichtig: Keine Karte kann alle drei gleichzeitig – es muss immer ein <strong>Kompromiss</strong> gemacht werden!',
+   qs:[
+     ['Welche drei Hauptarten von Kartenprojektionen gibt es?','Zylinderprojektion, Kegelprojektion und Azimutalprojektion.'],
+     ['Wofür eignet sich die Zylinderprojektion?','Für Gebiete am Äquator – z.B. die Mercator-Karte für die Schifffahrt.'],
+     ['Wofür eignet sich die Azimutalprojektion?','Für kreisförmige Gebiete – zum Beispiel die Polgebiete.'],
+     ['Was bedeutet „flächentreu"?','Alle Flächen sind dem Massstab entsprechend korrekt – Länder haben die richtige Grösse.'],
+     ['Was bedeutet „winkeltreu"? Und wofür ist das wichtig?','Alle Winkel stimmen – wichtig für die Schiffsnavigation (Mercator-Karte).'],
+     ['Kann eine Karte gleichzeitig längentreu, flächentreu und winkeltreu sein?','Nein, nie! Es muss immer ein Kompromiss gemacht werden.'],
+   ]},
+
+  {ch:'Kap. 7 – Signaturen',
+   info:'<strong>Signaturen</strong> sind die Zeichensprache der Karten – wie Buchstaben einer Sprache. Man muss sie lernen, um eine Karte zu lesen. Es gibt drei Arten: <strong>Punktsignaturen</strong> (für Einzelobjekte, z.B. Gebäude), <strong>Liniensignaturen</strong> (für Strassen, Flüsse) und <strong>Flächensignaturen</strong> (für Wald, Seen). Die Farbregeln auf Schweizer Karten: <strong>Blau = Wasser</strong>, <strong>Grün = Pflanzen</strong>, <strong>Braun = Höhenlinien</strong>, <strong>Schwarz = Strassen, Wege, Ortsnamen, Häuser</strong>.',
+   qs:[
+     ['Was sind Signaturen?','Die Zeichensprache der Karten – vergleichbar mit Buchstaben einer Sprache.'],
+     ['Welche drei Arten von Signaturen gibt es?','Punkt-, Linien- und Flächensignaturen.'],
+     ['Welche Farbe steht für Wasser?','Blau (See, Fluss, Meer).'],
+     ['Welche Farbe steht für Pflanzen/Vegetation?','Grün (Wald, Obstanlage).'],
+     ['Welche Farbe steht für Höhenlinien?','Braun.'],
+   ]},
+
+  {ch:'Kap. 8 – Kartenmassstab ⭐',
+   info:'Der <strong>Massstab</strong> zeigt, wie stark eine Karte verkleinert ist. <strong>1:25\'000</strong> bedeutet: 1 cm auf der Karte entspricht 25\'000 cm in der Wirklichkeit – also <strong>250 Meter</strong>. Merkregel: Auf einer 1:25\'000-Karte entspricht <strong>1 km = 4 cm</strong>. Faustregel zu den Massstäben: Je <strong>kleiner die Zahl rechts</strong>, desto <strong>grösser der Massstab</strong> und desto weniger verkleinert (mehr Details, kleineres Gebiet). 1:25\'000 = grosser Massstab (viel Detail), 1:1\'000\'000 = kleiner Massstab (grosses Gebiet, wenig Detail).',
+   qs:[
+     ['Was gibt der Massstab einer Karte an?','Wie stark die Karte gegenüber der Wirklichkeit verkleinert ist.'],
+     ['Was bedeutet 1:25\'000?','1 cm auf der Karte entspricht 25\'000 cm (= 250 m) in der Wirklichkeit.'],
+     ['Was entspricht 1 km in Wirklichkeit auf einer 1:25\'000-Karte?','4 cm. (Merkregel!)'],
+     ['Welcher Massstab ist grösser: 1:25\'000 oder 1:1\'000\'000?','1:25\'000 – je kleiner die Zahl rechts, desto grösser der Massstab.'],
+     ['Wie lang ist eine 4 km lange Wanderung auf einer 1:25\'000-Karte?','16 cm (1 km = 4 cm, also 4 × 4 cm).'],
+   ]},
+];
+
+/* =============== QUIZSHOW DATEN (nach Schwierigkeit) =============== */
+const SHOW=[
+  // === LEICHT (1 Punkt) ===
+  {p:1,q:'Was ist Kartografie?',a:['Die Lehre vom Zeichnen und Lesen von Karten','Die Lehre von Planeten','Eine Form der Fotografie','Das Reisen'],r:0,
+   e:'Kartografie = Lehre vom Herstellen und Lesen von Karten.'},
+  {p:1,q:'Wie heisst ein Buch mit vielen Karten?',a:['Globus','Atlas','Lexikon','Album'],r:1,
+   e:'Atlas – darin sind viele Karten zusammengebunden.'},
+  {p:1,q:'Aus welcher Perspektive wird eine Karte gezeichnet?',a:['Froschperspektive','Vogelperspektive','Seitenansicht','Diagonal'],r:1,
+   e:'Vogelperspektive – senkrecht von oben.'},
+  {p:1,q:'Welche Farbe steht auf Karten für Wasser?',a:['Grün','Braun','Blau','Schwarz'],r:2,
+   e:'Blau = Wasser (Seen, Flüsse, Meer).'},
+  {p:1,q:'Welche Farbe steht für Pflanzen?',a:['Blau','Grün','Braun','Rot'],r:1,
+   e:'Grün = Pflanzen (Wald, Obstanlage).'},
+  {p:1,q:'Wie gross ist der Durchmesser der Erde?',a:['6\'400 km','12\'800 km','40\'000 km','150\'000 km'],r:1,
+   e:'12\'800 km Durchmesser.'},
+
+  // === MITTEL (2 Punkte) ===
+  {p:2,q:'Was bedeutet „generalisiert"?',a:['Besonders farbig','Vereinfacht','Vergrössert','Verdoppelt'],r:1,
+   e:'Generalisiert = vereinfacht. Ähnliche Dinge werden mit einer Signatur zusammengefasst.'},
+  {p:2,q:'Was zeigt eine THEMATISCHE Karte?',a:['Alle Elemente gleich wichtig','Ein bestimmtes Thema mit Farben/Symbolen hervorgehoben','Nur Berge','Nur Strassen'],r:1,
+   e:'Thematisch = ein Thema wird hervorgehoben (z.B. Klima, Bevölkerung).'},
+  {p:2,q:'Was zeigt eine TOPOGRAFISCHE Karte?',a:['Nur das Klima','Die Erdoberfläche mit allem gleich wichtig (Berge, Flüsse, Häuser)','Nur die Grenzen','Nur die Städte'],r:1,
+   e:'Topografisch = alles gleich wichtig: Form und Geländebedeckung.'},
+  {p:2,q:'Welche drei Arten von Signaturen gibt es?',a:['Rot, Grün, Blau','Punkt, Linie, Fläche','Gross, Mittel, Klein','Alt, Neu, Modern'],r:1,
+   e:'Punkt-, Linien- und Flächensignaturen.'},
+  {p:2,q:'Was bedeutet 1:25\'000?',a:['Die Karte ist 25\'000 cm gross','1 cm auf Karte = 25\'000 cm in Wirklichkeit (= 250 m)','1 cm = 25\'000 km','Karte zeigt 25\'000 km²'],r:1,
+   e:'1 cm Karte = 25\'000 cm = 250 m in Wirklichkeit.'},
+  {p:2,q:'Welche Farbe steht für Höhenlinien?',a:['Blau','Grün','Braun','Schwarz'],r:2,
+   e:'Braun = Höhenlinien, Dolinen, Senken.'},
+  {p:2,q:'Was ist der grosse Vorteil eines Globus?',a:['Er ist handlich','Er zeigt die Erde wie aus dem Raumschiff, ohne Kartenrand','Er ist günstig','Er zeigt alle Details'],r:1,
+   e:'Globus = wie aus dem Raumschiff, ohne Rand.'},
+
+  // === SCHWER (3 Punkte) ===
+  {p:3,q:'Welche drei Hauptarten von Kartenprojektionen gibt es?',a:['Rund, eckig, flach','Zylinder-, Kegel-, Azimutalprojektion','Topo, thema, politisch','Mercator, Peters, Hubble'],r:1,
+   e:'Zylinder, Kegel und Azimutalprojektion.'},
+  {p:3,q:'Wofür eignet sich die AZIMUTALPROJEKTION?',a:['Äquator','Kreisförmige Gebiete (z.B. Pole)','Ganz Europa','Nur Afrika'],r:1,
+   e:'Azimutal = kreisförmige Gebiete, z.B. Polgebiete.'},
+  {p:3,q:'Was bedeutet „winkeltreu"?',a:['Alle Flächen stimmen','Alle Winkel stimmen – wichtig für die Schifffahrt','Alle Farben stimmen','Alle Längen stimmen'],r:1,
+   e:'Winkeltreu = Winkel korrekt. Wichtig für die Schiffsnavigation.'},
+  {p:3,q:'Was bedeutet „flächentreu"?',a:['Winkel stimmen','Flächen (Länder) sind korrekt in der Grösse','Nur die Farbe stimmt','Die Karte ist flach'],r:1,
+   e:'Flächentreu = Länder haben die richtige Grösse zueinander.'},
+  {p:3,q:'Wie lang ist eine 4 km lange Wanderung auf einer 1:25\'000-Karte?',a:['4 cm','8 cm','16 cm','40 cm'],r:2,
+   e:'1 km = 4 cm auf 1:25\'000, also 4 km = 16 cm.'},
+  {p:3,q:'Welcher Massstab ist GRÖSSER (= weniger verkleinert)?',a:['1:1\'000\'000','1:100\'000','1:25\'000','Alle gleich'],r:2,
+   e:'Je kleiner die Zahl rechts, desto grösser der Massstab. 1:25\'000 ist der grösste hier.'},
+  {p:3,q:'Kann eine Karte gleichzeitig längen-, flächen- und winkeltreu sein?',a:['Ja, mit guter Technik','Nein, nie – es muss immer ein Kompromiss gemacht werden','Nur auf dem Globus','Nur bei kleinen Gebieten'],r:1,
+   e:'NIE! Verzerrungen lassen sich nie vollständig vermeiden.'},
+  {p:3,q:'Wer gründete 1838 das Eidgenössische Topographische Bureau?',a:['Henri Dunant','Guillaume-Henry Dufour','Alfred Escher','Kopernikus'],r:1,
+   e:'General Dufour – Vorläufer der heutigen Swisstopo.'},
+];
+
+/* =============== MASSSTAB-RECHNUNGEN =============== */
+const MASS=[
+  {q:'1 cm auf einer 1:25\'000-Karte entspricht wie viel in Wirklichkeit?',a:['25 m','250 m','2\'500 m','25 km'],r:1,
+   e:'1 × 25\'000 = 25\'000 cm = 250 m.'},
+  {q:'4 cm auf einer 1:25\'000-Karte entspricht wie viel?',a:['100 m','500 m','1 km','4 km'],r:2,
+   e:'4 × 25\'000 = 100\'000 cm = 1\'000 m = 1 km.'},
+  {q:'2 cm auf einer 1:50\'000-Karte entspricht wie viel?',a:['500 m','1 km','5 km','10 km'],r:1,
+   e:'2 × 50\'000 = 100\'000 cm = 1 km.'},
+  {q:'5 cm auf einer 1:100\'000-Karte entspricht wie viel?',a:['500 m','5 km','50 km','500 km'],r:1,
+   e:'5 × 100\'000 = 500\'000 cm = 5\'000 m = 5 km.'},
+  {q:'Wie lang ist eine 10 km Wanderung auf einer 1:25\'000-Karte?',a:['25 cm','40 cm','4 cm','10 cm'],r:1,
+   e:'1 km = 4 cm, also 10 km = 40 cm.'},
+  {q:'Zwei Städte sind auf einer 1:1\'000\'000-Karte 5 cm entfernt. Wie weit in Wirklichkeit?',a:['5 km','50 km','500 km','5\'000 km'],r:1,
+   e:'5 × 1\'000\'000 = 5\'000\'000 cm = 50 km.'},
+  {q:'Auf einer Stadtkarte sind 400 m in Wirklichkeit = 8 cm. Welcher Massstab?',a:['1:50','1:500','1:5\'000','1:50\'000'],r:2,
+   e:'400 m = 40\'000 cm. 40\'000 ÷ 8 = 5\'000. Also 1:5\'000.'},
+  {q:'3 cm auf einer 1:25\'000-Karte sind wie viele Meter?',a:['75 m','250 m','750 m','7\'500 m'],r:2,
+   e:'3 × 25\'000 = 75\'000 cm = 750 m.'},
+];
+
+/* =============== LOGIC =============== */
+let mode=null, idx=0, score=0;
+
+function goHome(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('modepick').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startMode(m){
+  mode=m;idx=0;score=0;
+  document.getElementById('modepick').classList.remove('active');
+  if(m==='rally'){document.getElementById('screen-rally').classList.add('active');renderRally();}
+  else if(m==='show'){document.getElementById('screen-show').classList.add('active');renderShow();}
+  else if(m==='mass'){document.getElementById('screen-mass').classList.add('active');renderMass();}
+  window.scrollTo(0,0);
+}
+
+/* --- RALLY --- */
+function renderRally(){
+  const item=RALLY[idx];
+  document.getElementById('rallyCount').textContent=`Kapitel ${idx+1} / ${RALLY.length}`;
+  const qListHtml=item.qs.map(q=>`<li class="q-item">${q[0]}</li>`).join('');
+  const aListHtml=item.qs.map(q=>`<li class="a-item">${q[1]}</li>`).join('');
+  document.getElementById('rallyContent').innerHTML=`
+    <div class="card">
+      <span class="chapter-tag">📖 ${item.ch}</span>
+      <div class="info-head">Infos zum Vorlesen</div>
+      <div class="info-body">${item.info}</div>
+    </div>
+    <div class="card">
+      <div class="q-head">❓ Fragen für Alessia</div>
+      <ol class="q-list">${qListHtml}</ol>
+      <button class="reveal-btn" onclick="document.getElementById('answers').classList.add('show');this.style.display='none'">✓ Antworten anzeigen</button>
+      <div id="answers" class="answers">
+        <div class="a-head">Musterantworten</div>
+        <ol class="a-list">${aListHtml}</ol>
+      </div>
+    </div>
+    <div class="navrow">
+      <button class="nav-btn" onclick="prevRally()" ${idx===0?'disabled':''}>← Zurück</button>
+      <button class="nav-btn primary" onclick="nextRally()">${idx===RALLY.length-1?'🏁 Fertig':'Weiter →'}</button>
+    </div>
+  `;
+  window.scrollTo(0,0);
+}
+function prevRally(){if(idx>0){idx--;renderRally();}}
+function nextRally(){
+  if(idx<RALLY.length-1){idx++;renderRally();}
+  else{
+    document.getElementById('rallyContent').innerHTML=`
+      <div class="card result-card">
+        <div class="result-emoji">🎉</div>
+        <h2 style="font-family:Cinzel,serif;color:var(--gold);letter-spacing:2px">Super gemacht!</h2>
+        <p class="result-text" style="margin-top:14px">Alle 6 Kapitel durchgearbeitet.<br>Jetzt die Quizshow starten? 🎯</p>
+        <button class="reveal-btn" style="margin-top:24px" onclick="goHome()">Zurück zum Menü</button>
+      </div>`;
+    window.scrollTo(0,0);
+  }
+}
+
+/* --- QUIZSHOW --- */
+function renderShow(){
+  if(idx>=SHOW.length){return showResult();}
+  const q=SHOW[idx];
+  document.getElementById('showCount').textContent=`Frage ${idx+1} / ${SHOW.length}`;
+  document.getElementById('showScore').textContent='✦ '+score;
+  const diffClass=q.p===1?'diff-1':q.p===2?'diff-2':'diff-3';
+  const diffLabel=q.p===1?'Leicht':q.p===2?'Mittel':'Schwer';
+  const optsHtml=q.a.map((o,i)=>`<button class="answer-btn" onclick="answerShow(${i})">${String.fromCharCode(65+i)}) ${o}</button>`).join('');
+  document.getElementById('showContent').innerHTML=`
+    <div class="card">
+      <div>
+        <span class="chapter-tag">Frage ${idx+1}</span>
+        <span class="diff-tag ${diffClass}">${diffLabel} · ${q.p} P</span>
+      </div>
+      <div class="q-text" style="margin-top:14px">${q.q}</div>
+      <div id="opts">${optsHtml}</div>
+      <div id="showAnswer" class="qs-answer"></div>
+      <button id="nextShow" class="nav-btn primary" style="display:none;margin-top:16px" onclick="idx++;renderShow()">${idx===SHOW.length-1?'🏆 Ergebnis':'Weiter →'}</button>
+    </div>
+  `;
+  window.scrollTo(0,0);
+}
+function answerShow(i){
+  const q=SHOW[idx];
+  const btns=document.querySelectorAll('#opts .answer-btn');
+  btns.forEach((b,bi)=>{
+    b.disabled=true;
+    if(bi===q.r)b.classList.add('show-right');
+    else if(bi===i)b.classList.add('show-wrong');
+  });
+  if(i===q.r)score+=q.p;
+  document.getElementById('showScore').textContent='✦ '+score;
+  const ans=document.getElementById('showAnswer');
+  ans.innerHTML=(i===q.r?'<strong>✓ Richtig!</strong> ':'<strong>✗ Falsch.</strong> ')+q.e;
+  ans.classList.add('show');
+  document.getElementById('nextShow').style.display='block';
+}
+function showResult(){
+  const total=SHOW.reduce((s,q)=>s+q.p,0);
+  const pct=Math.round(score/total*100);
+  let emoji='',rank='';
+  if(pct>=85){emoji='🏆';rank='Meister-Kartografin!';}
+  else if(pct>=70){emoji='🗺️';rank='Sehr gut unterwegs!';}
+  else if(pct>=50){emoji='🧭';rank='Guter Weg – weiter so!';}
+  else{emoji='📜';rank='Nochmal die Lern-Rallye durchgehen!';}
+  document.getElementById('showContent').innerHTML=`
+    <div class="card result-card">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-score">${score} / ${total}</div>
+      <div class="result-text">${rank}</div>
+      <div class="navrow" style="margin-top:24px">
+        <button class="nav-btn" onclick="goHome()">Menü</button>
+        <button class="nav-btn primary" onclick="startMode('show')">Nochmal 🔁</button>
+      </div>
+    </div>
+  `;
+  window.scrollTo(0,0);
+}
+
+/* --- MASS --- */
+function renderMass(){
+  if(idx>=MASS.length){return massResult();}
+  const q=MASS[idx];
+  document.getElementById('massCount').textContent=`Aufgabe ${idx+1} / ${MASS.length}`;
+  document.getElementById('massScore').textContent='✦ '+score;
+  const optsHtml=q.a.map((o,i)=>`<button class="answer-btn" onclick="answerMass(${i})">${String.fromCharCode(65+i)}) ${o}</button>`).join('');
+  document.getElementById('massContent').innerHTML=`
+    <div class="card">
+      <span class="chapter-tag">🧮 Massstab-Kopfrechnen</span>
+      <div class="q-text" style="margin-top:14px">${q.q}</div>
+      <div id="moptsM">${optsHtml}</div>
+      <div id="massAnswer" class="qs-answer"></div>
+      <button id="nextMass" class="nav-btn primary" style="display:none;margin-top:16px" onclick="idx++;renderMass()">${idx===MASS.length-1?'🏆 Ergebnis':'Weiter →'}</button>
+    </div>
+  `;
+  window.scrollTo(0,0);
+}
+function answerMass(i){
+  const q=MASS[idx];
+  const btns=document.querySelectorAll('#moptsM .answer-btn');
+  btns.forEach((b,bi)=>{
+    b.disabled=true;
+    if(bi===q.r)b.classList.add('show-right');
+    else if(bi===i)b.classList.add('show-wrong');
+  });
+  if(i===q.r)score++;
+  document.getElementById('massScore').textContent='✦ '+score;
+  const ans=document.getElementById('massAnswer');
+  ans.innerHTML=(i===q.r?'<strong>✓ Richtig!</strong> ':'<strong>✗ Falsch.</strong> ')+q.e;
+  ans.classList.add('show');
+  document.getElementById('nextMass').style.display='block';
+}
+function massResult(){
+  const pct=Math.round(score/MASS.length*100);
+  let emoji='',rank='';
+  if(pct>=85){emoji='🏆';rank='Rechen-Profi!';}
+  else if(pct>=60){emoji='🧮';rank='Sehr gut – weiter üben!';}
+  else{emoji='📏';rank='Die Merkregel: 1 km = 4 cm auf 1:25\'000.';}
+  document.getElementById('massContent').innerHTML=`
+    <div class="card result-card">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-score">${score} / ${MASS.length}</div>
+      <div class="result-text">${rank}</div>
+      <div class="navrow" style="margin-top:24px">
+        <button class="nav-btn" onclick="goHome()">Menü</button>
+        <button class="nav-btn primary" onclick="startMode('mass')">Nochmal 🔁</button>
+      </div>
+    </div>
+  `;
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
